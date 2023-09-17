@@ -18,7 +18,7 @@ extern "C" {
 #define NUM_SAMPLES 1
 #define PAYLOAD_LENGTH 20
 
-/* Sleep */
+/* Sleep zz */
 #define STANDBY_DURATION_SECOND 3
 
 /* Bit to read */
