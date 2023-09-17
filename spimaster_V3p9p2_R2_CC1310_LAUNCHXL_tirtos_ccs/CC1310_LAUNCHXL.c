@@ -515,15 +515,13 @@ const uint_least8_t Display_count = 0;
  *       reduce memory usage.
  */
 GPIO_PinConfig gpioPinConfigs[] = {
-    IOID_0 | GPIO_DO_NOT_CONFIG,
     IOID_1 | GPIO_DO_NOT_CONFIG,
     IOID_2 | GPIO_DO_NOT_CONFIG,
-    IOID_8 | GPIO_DO_NOT_CONFIG,
 
     IOID_3 | GPIO_DO_NOT_CONFIG,
     IOID_4 | GPIO_DO_NOT_CONFIG,
-//    IOID_5 | GPIO_DO_NOT_CONFIG,
-//    IOID_6 | GPIO_DO_NOT_CONFIG,
+    IOID_5 | GPIO_DO_NOT_CONFIG, /*INT1*/
+    IOID_6 | GPIO_DO_NOT_CONFIG, /*INT2*/
 //    IOID_7 | GPIO_DO_NOT_CONFIG,
 //    IOID_8 | GPIO_DO_NOT_CONFIG, //Needed for nDRDY
 //    IOID_9 | GPIO_DO_NOT_CONFIG,
@@ -786,17 +784,16 @@ const uint_least8_t NVS_count = CC1310_LAUNCHXL_NVSCOUNT;
 // AG PIN CONGIF for EGG V3 RSM Package
 const PIN_Config BoardGpioInitTable[] = {
 
-    //IOID_0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,         DIO0 not in 7x7 /* TEST Pin -- not changed from: LED initially off */
-    IOID_1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL,                                              /* TEST Pin -- not changed from: UART RX via debugger back channel */
-    IOID_2 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL,                          /* TEST Pin -- not changed from: UART TX via debugger back channel */
-    IOID_3 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,         /* TEST Pin (possibly to tie to ADC SYNC/nRESET later) -- not changed from: LED initially off          */
-    IOID_4 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PULLDOWN | PIN_DRVSTR_MAX,       /* ADC Clock Enable Pin -- start low for clock enable, but open source so high when sleep, start with max drive strength and see if can get away with MED/MIN later for power*/
-    IOID_5 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PULLUP,                                               /* SPI master out - slave in */
-    IOID_6 | PIN_INPUT_EN | PIN_PULLDOWN,                                               /* SPI master in - slave out */
-    IOID_7 | PIN_INPUT_EN | PIN_PULLDOWN,                                               /* SPI clock */
-    IOID_8 | PIN_INPUT_EN | PIN_PULLUP,                                               /* nDRDY input interrupt -- set as input, need to check rest         */
-    // DIO8 was PULLDOWN, but ADC wants to be high to changing to PULLUP
-    IOID_9 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PULLUP | PIN_DRVSTR_MAX,        /* nCS         */
+    IOID_0 | PIN_INPUT_EN | PIN_PULLDOWN,                                             /* SPI master in - slave out MISO */
+    IOID_1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL,                        /* TEST Pin -- not changed from: UART RX via debugger back channel */
+    IOID_2 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL,                        /* TEST Pin -- not changed from: UART TX via debugger back channel */
+    IOID_3 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL,                        /* Add1 */
+    IOID_4 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL,                        /* Add2*/
+    IOID_5 | PIN_INPUT_EN | PIN_PULLUP,                                               /* INT1 */
+    IOID_6 | PIN_INPUT_EN | PIN_PULLUP,                                               /* INT2 */
+    IOID_7 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PULLUP | PIN_DRVSTR_MAX,        /* SPI nCS */
+    IOID_8 | PIN_INPUT_EN | PIN_PULLDOWN,                                             /* SPI clock SCL*/
+    IOID_9 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PULLUP,                         /* SPI master out - slave in MOSI*/
 
     PIN_TERMINATE
 };
