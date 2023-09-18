@@ -100,6 +100,7 @@ int32_t platform_write(void *handle, uint16_t reg, uint16_t data);
 
 int Data_update_check(void *handle, uint16_t check_type);
 int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read);
+int Voltage_Temp_read(void);
 
 uint8_t* Acceleration_raw_get(void *handle);
 uint8_t* Angular_Rate_raw_get(void *handle);
@@ -115,8 +116,6 @@ static int8_t angular_8bit[6];
 static float accel_g[3];
 static float angular_mdps[3];
 
-uint8_t dummy_address;
-
 #define THREADSTACKSIZE (1024)
 
 #define SPI_MSG_LENGTH  (10)
@@ -124,13 +123,14 @@ uint8_t dummy_address;
 
 #define MAX_LOOP        (10)
 
-uint8_t buffer_XL[6];
-uint8_t buffer_G[6];
+/* Pin driver handles */
+static PIN_Handle INTPinHandle;
 
-/* RF transmission */
-#define PACKET_SIZE 12
-#define NUM_SAMPLES 1
-#define PAYLOAD_LENGTH 20
+/* Global memory storage for a PIN_Config table */
+static PIN_State INTPinState;
+
+/* Interrupt */
+int globalFlag = 0;
 
 //static Display_Handle display;
 
@@ -144,9 +144,7 @@ SPI_Transaction transaction;
 
 uint8_t data_ready = 0;
 
-// PWM Globals
-PWM_Handle pwm;
-PWM_Params pwmParams;
+
 
 /* Semaphore to block master until slave is ready for transfer */
 sem_t masterSem;
@@ -162,7 +160,12 @@ void slaveReadyFxn(uint_least8_t index)
     data_ready = 1;
     //GPIO_toggle(Board_GPIO_LED0);
 
+}
 
+void INTCallBackFxn(PIN_Handle handle, PIN_Id pinId)
+{
+    globalFlag = (globalFlag == 0) ? 1 : 0;
+    printf("value is %d\n", globalFlag);
 }
 
 void send_databuffer(const void* buffer, int buffer_size)
@@ -557,7 +560,56 @@ int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read){
     return 1;
 }
 
+/**
+  * @brief  Read voltage and temperature on MCU with TI functions and send directly through RF
+  */
 
+int Voltage_Temp_read(void){
+    //Get battery voltage (this will return battery voltage in decimal form you need to convert)
+    uint32_t BATstatus = AONBatMonBatteryVoltageGet();
+    //Get current temp as a signed value in Deg Celsius
+    uint32_t TEMPstatus = AONBatMonTemperatureGetDegC();
+
+    // convert in Milli volts
+    BATstatus = (BATstatus * 125) >> 5;
+
+    //convert in floating point value
+    float BATvoltage = (float)BATstatus / 1000;
+
+  //  float TEMPdegc = (float)TEMPstatus;
+
+    uint8_t Bat_bytes[2] =
+    {
+      ((uint32_t)BATstatus >> 8) & 0xFF,  // shift by 0 not needed, of course, just stylistic
+      ((uint32_t)BATstatus >> 0) & 0xFF,
+    };
+
+    uint8_t Temp_bytes[2] =
+    {
+      ((uint32_t)TEMPstatus >> 8) & 0xFF,
+      ((uint32_t)TEMPstatus >> 0) & 0xff,
+    };
+
+    float TEMPdegc = (float)TEMPstatus;
+
+    uint8_t mdata_buffer[4];
+
+    int i;
+
+    for(i = 0; i < 2; i++){
+        mdata_buffer[i] = Bat_bytes[i];
+        mdata_buffer[i + 2] = Temp_bytes[i];
+    }
+
+    printf("Voltage is %f\n", BATvoltage);
+    printf("Temp is %f\n", TEMPdegc);
+
+
+    send_databuffer(mdata_buffer,sizeof(mdata_buffer));
+
+    return 1;
+
+}
 
 /*
  *  ======== masterThread ========
@@ -581,6 +633,11 @@ void *masterThread(void *arg0)
     send_databuffer(test_startup_buffer,sizeof(test_startup_buffer));     //confirm Tx OK
 
     Power_enablePolicy();
+
+    GPIO_setConfig(IOID5, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
+    GPIO_setCallback(IOID5, INTCallBackFxn);
+    GPIO_enableInt(IOID5);  /* INT */
+
     init_SPI_IMU();
 
     IMU_Configure();
@@ -593,21 +650,21 @@ void *masterThread(void *arg0)
     int32_t rx_Data_XL = platform_read(masterSpi, LSM6DSOX_WHOAMI, &dummy_read_XL);
 
     while(1){
-        int check_G_aval = Data_update_check(masterSpi, G_BIT);
 
-        if(check_G_aval){
-            uint8_t* XL_data = Acceleration_raw_get(masterSpi);
-            uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
-            RF_transmission(XL_data, G_data);
+        while(globalFlag == 1){
+            int check_G_aval = Data_update_check(masterSpi, G_BIT);
+            if(check_G_aval){
+                uint8_t* XL_data = Acceleration_raw_get(masterSpi);
+                uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
+                RF_transmission(XL_data, G_data);
+            }
         }
+        sleep(STANDBY_DURATION_SECOND);
+        Voltage_Temp_read();
     }
 
 
 }
-
-
-
-
 
 
 

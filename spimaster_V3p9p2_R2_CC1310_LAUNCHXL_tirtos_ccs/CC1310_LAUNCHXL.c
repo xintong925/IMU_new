@@ -516,9 +516,7 @@ const uint_least8_t Display_count = 0;
  */
 GPIO_PinConfig gpioPinConfigs[] = {
 
-    IOID_0 | GPIO_DO_NOT_CONFIG, /*INT1*/
- //   IOID_8 | GPIO_DO_NOT_CONFIG, /*INT2*/
-
+    IOID_0 | GPIO_DO_NOT_CONFIG,
     IOID_1 | GPIO_DO_NOT_CONFIG,
     IOID_2 | GPIO_DO_NOT_CONFIG,
     IOID_3 | GPIO_DO_NOT_CONFIG,
