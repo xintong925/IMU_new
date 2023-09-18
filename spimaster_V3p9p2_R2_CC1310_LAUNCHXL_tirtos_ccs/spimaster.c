@@ -602,48 +602,7 @@ void *masterThread(void *arg0)
         }
     }
 
-    //GPIO_write(ADC_CLOCK_NOT_EN, 1);    //Disable SITIME ADC CLock
 
-    // Initialize the PWM parameters for ADC Clock
-    PWM_Params_init(&pwmParams);
-    pwmParams.idleLevel = PWM_IDLE_HIGH;      // Output low when PWM is not running
-    pwmParams.periodUnits = PWM_PERIOD_HZ;   // Period is in Hz
-    pwmParams.periodValue = 2e6;             // 2.001MHz
-    pwmParams.dutyUnits = PWM_DUTY_FRACTION; // Duty is in fractional percentage
-    pwmParams.dutyValue = (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * 50) / 100); //50% clock
-
-    // Open the PWM instance
-    pwm = PWM_open(Board_PWM2, &pwmParams);
-    if (pwm == NULL) {
-            // PWM_open() failed
-            while (1); // TODO change to RF send help command
-    }
-
-    PWM_start(pwm);
-
-    /* START OPERATIONS */
-    extern const uint64_t NUMBER_OF_SAMPLES_ARRAY[];
-    extern const uint64_t SLEEP_TIME_ARRAY[];
-    extern const uint16_t RECORDING_MODE_ARRAY[];
-    extern const uint16_t SLEEP_MODE_ARRAY[];
-
-
-
-//     Should do these at end of program, but unreachable since we want the device to die in loop
-//     Commenting so no warnings during build.
-//    SPI_close(masterSpi);
-//
-//    GPIO_disableInt(3);
-//    GPIO_setConfig(3, GPIO_CFG_OUTPUT | GPIO_CFG_OUT_LOW);
-//    GPIO_write(3, 0);
-//
-//    GPIO_write(DEBUG_GPIO_1, 1);
-//    GPIO_write(DEBUG_GPIO_1, 0);
-//
-//
-//    Display_printf(display, 0, 0, "\nDone");
-
-//    return (NULL);
 }
 
 
