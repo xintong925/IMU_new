@@ -1,7 +1,7 @@
 /*
- * Parameter_setting.h
+ * parameter_setting.h
  *
- *  Created on: Aug 24, 2023
+ *  Created on: Sep 17, 2023
  *      Author: tongx
  */
 
@@ -11,7 +11,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /* RF transmission */
 #define PACKET_SIZE 12
@@ -70,8 +69,6 @@ uint8_t test_buffer[2] = {0x09, 0x25};
 uint8_t test_buffer_configure[2] = {0x00, 0x11};
 
 uint8_t GPIO_INT_ACTIVE = 0x00;
-
-
 
 #ifdef __cplusplus
 }

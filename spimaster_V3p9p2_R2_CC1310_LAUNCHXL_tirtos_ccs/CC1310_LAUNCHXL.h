@@ -105,13 +105,13 @@ extern const PIN_Config BoardGpioInitTable[];
 /* LEDs */
 #define CC1310_LAUNCHXL_PIN_LED_ON            1
 #define CC1310_LAUNCHXL_PIN_LED_OFF           0
-#define CC1310_LAUNCHXL_PIN_RLED              IOID_6
-#define CC1310_LAUNCHXL_PIN_GLED              IOID_7
+#define CC1310_LAUNCHXL_PIN_RLED              PIN_UNASSIGNED
+#define CC1310_LAUNCHXL_PIN_GLED              PIN_UNASSIGNED
 
 /* PWM Outputs */
 #define CC1310_LAUNCHXL_PWMPIN0               CC1310_LAUNCHXL_PIN_RLED
 #define CC1310_LAUNCHXL_PWMPIN1               CC1310_LAUNCHXL_PIN_GLED
-#define CC1310_LAUNCHXL_PWMPIN2               IOID_4
+#define CC1310_LAUNCHXL_PWMPIN2               PIN_UNASSIGNED
 #define CC1310_LAUNCHXL_PWMPIN3               PIN_UNASSIGNED
 #define CC1310_LAUNCHXL_PWMPIN4               PIN_UNASSIGNED
 #define CC1310_LAUNCHXL_PWMPIN5               PIN_UNASSIGNED
@@ -119,7 +119,7 @@ extern const PIN_Config BoardGpioInitTable[];
 #define CC1310_LAUNCHXL_PWMPIN7               PIN_UNASSIGNED
 
 /* SPI */
-#define CC1310_LAUNCHXL_SPI_FLASH_CS          IOID_20
+#define CC1310_LAUNCHXL_SPI_FLASH_CS          IOID_3
 #define CC1310_LAUNCHXL_FLASH_CS_ON           0
 #define CC1310_LAUNCHXL_FLASH_CS_OFF          1
 
@@ -296,13 +296,10 @@ typedef enum CC1310_LAUNCHXL_TRNGName {
  */
 // COmmenting out to force errors and correct with right names
 typedef enum CC1310_LAUNCHXL_GPIOName {
-    CC1310_LAUNCHXL_GPIO_S1 = 0,
-    CC1310_LAUNCHXL_GPIO_S2,
+    IOID0 = 0,
+    IOID1,
     CC1310_LAUNCHXL_SPI_MASTER_READY,
     CC1310_LAUNCHXL_SPI_SLAVE_READY,
-    IOID5,
-    IOID6,
-    CC1310_LAUNCHXL_GPIO_TMP116_EN,
     CC1310_LAUNCHXL_GPIO_SPI_FLASH_CS,
     CC1310_LAUNCHXL_SDSPI_CS,
     CC1310_LAUNCHXL_GPIO_LCD_CS,
