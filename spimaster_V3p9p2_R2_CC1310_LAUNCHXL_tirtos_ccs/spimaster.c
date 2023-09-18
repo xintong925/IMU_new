@@ -62,13 +62,9 @@
 #include <ti/devices/cc13x0/driverlib/gpio.h>
 #include <ti/devices/cc13x0/driverlib/aon_batmon.h>
 
-#include "ads131m0x.h"
-
-#include "EGG_Experiment_Params.h"
-
 /* IMU */
 #include "LSM6DSOX.h"
-//#include "parameter_setting.h"
+#include "parameter_setting.h"
 
 /* Example/Board Header files */
 
@@ -87,11 +83,6 @@
 
 #define TRUE 1
 
-#define READ_BIT                         0x8000
-#define TEMP_BIT                         0x0004
-#define XL_BIT                           0x0001
-#define G_BIT                            0x0002
-#define ACTIVITY_BIT                     0x0010
 
 /***** Prototypes *****/
 
@@ -113,13 +104,6 @@ int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read);
 uint8_t* Acceleration_raw_get(void *handle);
 uint8_t* Angular_Rate_raw_get(void *handle);
 
-int send_spi_to_adc(uint16_t *tx_buffer, uint16_t *rx_buffer, uint16_t words_to_send, const bool send_response);
-int init_ads131m08();
-int transmit_adc_samples(const uint64_t NUM_SAMPLES);
-int goto_sleep(const uint64_t standby_sleep_duration, const uint64_t standby_intervals, const bool transmit_flag);
-int goto_sleep_min(const uint64_t SLEEP_IN_MIN);
-int goto_sleep_sec(const uint64_t SLEEP_IN_SEC);
-int migut_open_spi(void);
 
 static int16_t raw_temp; // need to set to be int16_t, otherwise does not make sense
 static int16_t raw_accel[3];
@@ -139,17 +123,6 @@ uint8_t dummy_address;
 //#define MASTER_MSG      ("Hello from master, msg#: ")
 
 #define MAX_LOOP        (10)
-
-/* XL and G Value */
-const float XL_SCALE_RANGE_2_G = 0.061;
-const float XL_SCALE_RANGE_4_G = 0.122;
-const float XL_SCALE_RANGE_8_G = 0.244;
-const float XL_SCALE_RANGE_16_G = 0.488;
-
-const float G_SCALE_RANGE_250_DPS = 8.75;
-const float G_SCALE_RANGE_500_DPS = 17.5;
-const float G_SCALE_RANGE_1000_DPS = 35.0;
-const float G_SCALE_RANGE_2000_DPS = 70.0;
 
 uint8_t buffer_XL[6];
 uint8_t buffer_G[6];
@@ -398,22 +371,22 @@ int IMU_Configure(void) {
 
     int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, 0x0048);      // Turn on the accelerometer by setting ODR_XL and FS_XL
     int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, 0x0038);         // Turn on the gyroscope by setting ODR_G and FS_G
-//    int32_t WakeUpDur = platform_write(masterSpi, LSM6DSOX_WAKE_UP_DUR,  WAKE_UP_DUR);       // Set duration for inactivity detection
-//                                                                                                // Select activity/inactivity threshold resolution and duration
-//    int32_t WakeUpTHS = platform_write(masterSpi, LSM6DSOX_WAKE_UP_THS, WAKE_UP_THS);        // Set activity/inactivity threshold
-//
-//    int32_t Tap_Enable = platform_write(masterSpi, LSM6DSOX_TAP_CFG0, TAP_CFG0_VALUE);       // Select sleep-change notification
-//                                                                                                // Select slope filter
-//    int32_t InterruptEnable = platform_write(masterSpi, LSM6DSOX_TAP_CFG2, TAP_CFG2_VALUE);  // Enable interrupt
-//                                                                                                // Inacitvity configuration: accelerometer to 12.5 Hz (LP mode)
-//                                                                                                // Gyroscope to Power-Down mode
-//    int32_t INT1_Routing = platform_write(masterSpi, LSM6DSOX_MD1_CFG, MD1_CFG_VALUE);       // Activity/Inactivity interrupt driven to INT1 pin
-//    int32_t INT2_Routing = platform_write(masterSpi, LSM6DSOX_MD2_CFG, MD2_CFG_VALUE);
+    int32_t WakeUpDur = platform_write(masterSpi, LSM6DSOX_WAKE_UP_DUR,  WAKE_UP_DUR);       // Set duration for inactivity detection
+                                                                                                // Select activity/inactivity threshold resolution and duration
+    int32_t WakeUpTHS = platform_write(masterSpi, LSM6DSOX_WAKE_UP_THS, WAKE_UP_THS);        // Set activity/inactivity threshold
 
- //   int32_t INT_dataReadt = platform_write(masterSpi, LSM6DSOX_INT1_CTRL, INT1_CTRL_VALUE);
+    int32_t Tap_Enable = platform_write(masterSpi, LSM6DSOX_TAP_CFG0, TAP_CFG0_VALUE);       // Select sleep-change notification
+                                                                                                // Select slope filter
+    int32_t InterruptEnable = platform_write(masterSpi, LSM6DSOX_TAP_CFG2, TAP_CFG2_VALUE);  // Enable interrupt
+                                                                                                // Inacitvity configuration: accelerometer to 12.5 Hz (LP mode)
+                                                                                                // Gyroscope to Power-Down mode
+    int32_t INT1_Routing = platform_write(masterSpi, LSM6DSOX_MD1_CFG, MD1_CFG_VALUE);       // Activity/Inactivity interrupt driven to INT1 pin
+    int32_t INT2_Routing = platform_write(masterSpi, LSM6DSOX_MD2_CFG, MD2_CFG_VALUE);
+
+    int32_t INT_dataReadt = platform_write(masterSpi, LSM6DSOX_INT1_CTRL, INT1_CTRL_VALUE);
 
     printf("SPI initialized successfully and IMU has been waken up\n");
- //   send_databuffer(test_buffer_configure,sizeof(test_buffer_configure));
+    send_databuffer(test_buffer_configure,sizeof(test_buffer_configure));
 
     return 0;
 
@@ -654,65 +627,6 @@ void *masterThread(void *arg0)
     extern const uint16_t RECORDING_MODE_ARRAY[];
     extern const uint16_t SLEEP_MODE_ARRAY[];
 
-
-    init_ads131m08();           // init ADC
-
-    uint16_t sst_array_index = 0;
-    uint16_t first_index_flag = 0;
-    const uint16_t sst_array_size = sizeof(NUMBER_OF_SAMPLES_ARRAY) / sizeof(NUMBER_OF_SAMPLES_ARRAY[0]);
-
-    goto_sleep_sec(INIT_SLEEP);
-
-    // Loop which will run forever
-    for (sst_array_index = 0; TRUE; sst_array_index=(sst_array_index+1) % sst_array_size) {
-
-        if (sst_array_index==0 && first_index_flag==1 && FIRST_INDEX_NO_REPEAT==1){
-            //empty skip IF nothing
-        } else {
-            if (RECORDING_MODE_ARRAY[sst_array_index]==1) {
-
-                transmit_multiple_adc_samples(NUMBER_OF_SAMPLES_ARRAY[sst_array_index]); //adam func
-
-            }
-
-            if (RECORDING_MODE_ARRAY[sst_array_index]==2) {
-                uint64_t j;
-                for (j = 0; j<NUMBER_OF_SAMPLES_ARRAY[sst_array_index]; j++){
-                    transmit_adc_samples_secs(N_RECORDING_MODE_2); //coen func
-                    goto_sleep_msec(TIME_BETWEEN_MS_MODE_2);
-                    }
-            }
-
-            if (RECORDING_MODE_ARRAY[sst_array_index]==3) {
-                            uint64_t j;
-                            for (j = 0; j<NUMBER_OF_SAMPLES_ARRAY[sst_array_index]; j++){
-                                transmit_adc_samples_secs(N_RECORDING_MODE_3); //coen func
-                                goto_sleep_sec(TIME_BETWEEN_S_MODE_3);
-                                if (TIME_BETWEEN_MS_MODE_3>0){
-                                    goto_sleep_msec(TIME_BETWEEN_MS_MODE_3);
-                                    }
-                                }
-                        }
-
-
-            if (SLEEP_MODE_ARRAY[sst_array_index]==1) {
-                    goto_sleep_min(SLEEP_TIME_ARRAY[sst_array_index]);          //sleep for X minutes (defined in SLEEP_TIME_ARRAY array in "EGG_Experiment_Params.h")
-            }
-
-            if (SLEEP_MODE_ARRAY[sst_array_index]==2) {
-                    goto_sleep_sec(SLEEP_TIME_ARRAY[sst_array_index]);          //sleep for X seconds (defined in SLEEP_TIME_ARRAY array in "EGG_Experiment_Params.h")
-            }
-
-            if (SLEEP_MODE_ARRAY[sst_array_index]==3) {
-                    goto_sleep_msec(SLEEP_TIME_ARRAY[sst_array_index]);         //sleep for X milliseconds (defined in SLEEP_TIME_ARRAY array in "EGG_Experiment_Params.h")
-            }
-
-        }
-        if (sst_array_index == 0) {
-            first_index_flag = 1; //Flip flag the first time the first element is run
-        }
-
-    }
 
 
 //     Should do these at end of program, but unreachable since we want the device to die in loop
