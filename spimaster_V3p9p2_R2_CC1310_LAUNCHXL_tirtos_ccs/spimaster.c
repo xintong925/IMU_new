@@ -97,7 +97,7 @@ int init_SPI_IMU(void);
 
 int32_t platform_read(void *handle, uint16_t reg, uint8_t *bufp);
 int32_t platform_write(void *handle, uint16_t reg, uint16_t data);
-
+int Activity_Detection(void *handle);
 int Data_update_check(void *handle, uint16_t check_type);
 int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read);
 int Voltage_Temp_read(void);
@@ -456,22 +456,22 @@ uint8_t* Acceleration_raw_get(void *handle) {
         accel_8bit[5] = (uint8_t)data_ZL;
 
 
-        data_XH <<= 8;
-        data_YH <<= 8;
-        data_ZH <<= 8;
+   //     data_XH <<= 8;
+   //     data_YH <<= 8;
+   //     data_ZH <<= 8;
 
     //    printf("data XH: 0x%04X\n", data_XL);
     //    printf("data XL: 0x%04X\n", data_XH);
 
-        raw_accel[0] = data_XL | data_XH;
-        raw_accel[1] = data_YL | data_YH;
-        raw_accel[2] = data_ZL | data_ZH;
+   //     raw_accel[0] = data_XL | data_XH;
+   //     raw_accel[1] = data_YL | data_YH;
+   //     raw_accel[2] = data_ZL | data_ZH;
 
     //    printf("data X: 0x%04X\n", raw_accel[0]);
 
-        accel_g[0] = ((float_t)raw_accel[0]) * XL_SCALE_RANGE_4_G/1000; // Refer Adafruit_LSM6DS.cpp
-        accel_g[1] = ((float_t)raw_accel[1]) * XL_SCALE_RANGE_4_G/1000;
-        accel_g[2] = ((float_t)raw_accel[2]) * XL_SCALE_RANGE_4_G/1000;
+   //     accel_g[0] = ((float_t)raw_accel[0]) * XL_SCALE_RANGE_4_G/1000; // Refer Adafruit_LSM6DS.cpp
+   //     accel_g[1] = ((float_t)raw_accel[1]) * XL_SCALE_RANGE_4_G/1000;
+   //     accel_g[2] = ((float_t)raw_accel[2]) * XL_SCALE_RANGE_4_G/1000;
 
    //     printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
 
@@ -520,17 +520,17 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
         angular_8bit[5] = (uint8_t)data_ZL;
 
         // can be removed
-        data_XH <<= 8;
-        data_YH <<= 8;
-        data_ZH <<= 8;
+  //      data_XH <<= 8;
+  //      data_YH <<= 8;
+  //      data_ZH <<= 8;
 
-        raw_angular[0] = data_XL | data_XH;
-        raw_angular[1] = data_YL | data_YH;
-        raw_angular[2] = data_ZL | data_ZH;
+  //      raw_angular[0] = data_XL | data_XH;
+  //      raw_angular[1] = data_YL | data_YH;
+  //      raw_angular[2] = data_ZL | data_ZH;
 
-        angular_mdps[0] = ((float_t)raw_angular[0]) * G_SCALE_RANGE_1000_DPS/1000;
-        angular_mdps[1] = ((float_t)raw_angular[1]) * G_SCALE_RANGE_1000_DPS/1000;
-        angular_mdps[2] = ((float_t)raw_angular[2]) * G_SCALE_RANGE_1000_DPS/1000;
+  //      angular_mdps[0] = ((float_t)raw_angular[0]) * G_SCALE_RANGE_1000_DPS/1000;
+  //      angular_mdps[1] = ((float_t)raw_angular[1]) * G_SCALE_RANGE_1000_DPS/1000;
+  //      angular_mdps[2] = ((float_t)raw_angular[2]) * G_SCALE_RANGE_1000_DPS/1000;
 
    //     printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
 
@@ -558,6 +558,42 @@ int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read){
     send_databuffer(mdata_buffer,sizeof(mdata_buffer));
 
     return 1;
+}
+
+
+/**
+  * @brief  Check if there is activity detected in IMU
+  *
+  * @param  handle      masterSpi
+  * @param  reg         Wake up register of IMU - LSM6DSOX_WAKE_UP_SRC
+  * @param  len         Number of consecutive register to write
+  *
+  */
+
+int Activity_Detection(void *handle) {
+
+    int32_t ret;
+
+    int data_status;
+
+  //  uint16_t dummy_act;
+
+    ret = platform_read(handle, LSM6DSOX_WAKE_UP_SRC, &dummy_address);
+
+    bool check_activity = ((ret&ACTIVITY_BIT) == ACTIVITY_BIT); // if true, there's change in activity status
+  //  printf("pin value is: %d\n", activity_detection);
+  //  printf("GPIO 12 is: 0x%02X\n", GPIO_read(12));
+
+    if(check_activity) {
+    //    printf("zzzzzzzzzZZZZZZZZZZZZZZZZZ\n");
+        data_status = 0;
+    }
+    else{
+     //   printf("!!!!!!!!!!!!!!!!!!!!! Hello! !!!!!!!!!!!!!!!!!!!\n");
+        data_status = 1;
+    }
+    return data_status;
+
 }
 
 /**
@@ -632,11 +668,11 @@ void *masterThread(void *arg0)
     uint8_t test_startup_buffer[1] = {0x28};
     send_databuffer(test_startup_buffer,sizeof(test_startup_buffer));     //confirm Tx OK
 
-    Power_enablePolicy();
+ //   Power_enablePolicy();
 
-    GPIO_setConfig(IOID5, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
-    GPIO_setCallback(IOID5, INTCallBackFxn);
-    GPIO_enableInt(IOID5);  /* INT */
+//    GPIO_setConfig(IOID5, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
+//    GPIO_setCallback(IOID5, INTCallBackFxn);
+//    GPIO_enableInt(IOID5);  /* INT */
 
     init_SPI_IMU();
 
@@ -646,12 +682,15 @@ void *masterThread(void *arg0)
      AONBatMonEnable();
 
      /* Check IMU ID */
-    uint8_t dummy_read_XL;
-    int32_t rx_Data_XL = platform_read(masterSpi, LSM6DSOX_WHOAMI, &dummy_read_XL);
+ //   uint8_t dummy_read_XL;
+ //   int32_t rx_Data_XL = platform_read(masterSpi, LSM6DSOX_WHOAMI, &dummy_read_XL);
 
     while(1){
 
-        while(globalFlag == 1){
+        int check_status = Activity_Detection(masterSpi);
+        if(check_status == 1){
+
+    //    while(globalFlag == 1){
             int check_G_aval = Data_update_check(masterSpi, G_BIT);
             if(check_G_aval){
                 uint8_t* XL_data = Acceleration_raw_get(masterSpi);
@@ -659,8 +698,10 @@ void *masterThread(void *arg0)
                 RF_transmission(XL_data, G_data);
             }
         }
-        sleep(STANDBY_DURATION_SECOND);
-        Voltage_Temp_read();
+        else{
+            sleep(STANDBY_DURATION_SECOND);
+            Voltage_Temp_read();
+        }
     }
 
 
