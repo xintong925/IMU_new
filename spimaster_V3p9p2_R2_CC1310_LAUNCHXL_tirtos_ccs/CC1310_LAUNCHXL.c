@@ -570,8 +570,6 @@ GPIO_CallbackFxn gpioCallbackFunctions[] = {
     NULL,
     NULL,
     NULL,
-    NULL,
-    NULL,
     NULL
 };
 
@@ -798,16 +796,11 @@ const PIN_Config BoardGpioInitTable[] = {
     IOID_2 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL,                        /* TEST Pin -- not changed from: UART TX via debugger back channel */
     IOID_3 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,       /* Add1 */
     IOID_4 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,       /* Add2*/
- //   IOID_5 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PULLUP,                                               /* SPI master out - slave in */
-    IOID_5 | PIN_INPUT_EN | PIN_PULLUP,                                               /* INT1 */
-    IOID_6 | PIN_INPUT_EN | PIN_PULLUP,                                               /* INT2 */
-  //  IOID_6 | PIN_INPUT_EN | PIN_PULLDOWN,                                             /* SPI master in - slave out MISO */
-  //  IOID_7 | PIN_INPUT_EN | PIN_PULLDOWN,                                               /* SPI clock */
+    IOID_5 | PIN_INPUT_EN | PIN_PULLDOWN,                                             /* INT1 */
+    IOID_6 | PIN_INPUT_EN | PIN_PULLDOWN,                                             /* INT2 */
     IOID_7 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PULLUP | PIN_DRVSTR_MAX,        /* SPI nCS */
- //   IOID_8 | PIN_INPUT_EN | PIN_PULLUP,                                               /* nDRDY input interrupt -- set as input, need to check rest         */
     IOID_8 | PIN_INPUT_EN | PIN_PULLDOWN,                                             /* SPI clock SCL*/
-    IOID_9 | PIN_INPUT_EN | PIN_PULLDOWN,                                             /* SPI master out - slave in MOSI*/
- //   IOID_9 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PULLUP | PIN_DRVSTR_MAX,        /* nCS         */
+    IOID_9 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PULLUP,                         /* SPI master out - slave in MOSI*/
 
     PIN_TERMINATE
 };

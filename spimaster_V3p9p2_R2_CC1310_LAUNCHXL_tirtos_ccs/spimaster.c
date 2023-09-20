@@ -83,6 +83,9 @@
 
 #define TRUE 1
 
+/* Interrupt */
+int globalFlag = 0;
+int* pFlag = &globalFlag;
 
 /***** Prototypes *****/
 
@@ -129,8 +132,7 @@ static PIN_Handle INTPinHandle;
 /* Global memory storage for a PIN_Config table */
 static PIN_State INTPinState;
 
-/* Interrupt */
-int globalFlag = 0;
+
 
 //static Display_Handle display;
 
@@ -144,7 +146,10 @@ SPI_Transaction transaction;
 
 uint8_t data_ready = 0;
 
-
+PIN_Config INTPinTable[] = {
+    IOID5 | PIN_INPUT_EN | PIN_PULLDOWN | PIN_IRQ_POSEDGE,
+    PIN_TERMINATE
+};
 
 /* Semaphore to block master until slave is ready for transfer */
 sem_t masterSem;
@@ -164,8 +169,22 @@ void slaveReadyFxn(uint_least8_t index)
 
 void INTCallBackFxn(PIN_Handle handle, PIN_Id pinId)
 {
-    globalFlag = (globalFlag == 0) ? 1 : 0;
-    printf("value is %d\n", globalFlag);
+    *pFlag = (*pFlag == 0) ? 1 : 0;
+//    if(globalFlag == 1){
+//        globalFlag = 0;
+//    }
+//    else{
+//        globalFlag = 1;
+//    }
+    printf("pin value is %d\n", PIN_getInputValue(PIN_ID(5)));
+//    while(globalFlag == 1){
+//        int check_G_aval = Data_update_check(masterSpi, G_BIT);
+//        if(check_G_aval){
+//            uint8_t* XL_data = Acceleration_raw_get(masterSpi);
+//            uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
+//            RF_transmission(XL_data, G_data);
+//         }
+//     }
 }
 
 void send_databuffer(const void* buffer, int buffer_size)
@@ -346,7 +365,7 @@ int init_SPI_IMU(void) {
 
     SPI_Params_init(&spiParams);            //spiParams is a global (TODO change eventually)
     spiParams.frameFormat = SPI_POL0_PHA0; // Mode 1
-    spiParams.bitRate = 1000000;
+    spiParams.bitRate = 4000000;
   //  spiParams.mode = SPI_MASTER;
     spiParams.dataSize = 16;
     spiParams.transferMode = SPI_MODE_BLOCKING;
@@ -381,12 +400,12 @@ int IMU_Configure(void) {
     int32_t Tap_Enable = platform_write(masterSpi, LSM6DSOX_TAP_CFG0, TAP_CFG0_VALUE);       // Select sleep-change notification
                                                                                                 // Select slope filter
     int32_t InterruptEnable = platform_write(masterSpi, LSM6DSOX_TAP_CFG2, TAP_CFG2_VALUE);  // Enable interrupt
-                                                                                                // Inacitvity configuration: accelerometer to 12.5 Hz (LP mode)
+                                                                                                // Inactvity configuration: accelerometer to 12.5 Hz (LP mode)
                                                                                                 // Gyroscope to Power-Down mode
     int32_t INT1_Routing = platform_write(masterSpi, LSM6DSOX_MD1_CFG, MD1_CFG_VALUE);       // Activity/Inactivity interrupt driven to INT1 pin
-    int32_t INT2_Routing = platform_write(masterSpi, LSM6DSOX_MD2_CFG, MD2_CFG_VALUE);
+ //   int32_t INT2_Routing = platform_write(masterSpi, LSM6DSOX_MD2_CFG, MD2_CFG_VALUE);
 
-    int32_t INT_dataReadt = platform_write(masterSpi, LSM6DSOX_INT1_CTRL, INT1_CTRL_VALUE);
+ //   int32_t INT_dataReadt = platform_write(masterSpi, LSM6DSOX_INT1_CTRL, INT1_CTRL_VALUE);
 
     printf("SPI initialized successfully and IMU has been waken up\n");
     send_databuffer(test_buffer_configure,sizeof(test_buffer_configure));
@@ -668,11 +687,23 @@ void *masterThread(void *arg0)
     uint8_t test_startup_buffer[1] = {0x28};
     send_databuffer(test_startup_buffer,sizeof(test_startup_buffer));     //confirm Tx OK
 
- //   Power_enablePolicy();
+    Power_enablePolicy();
 
-//    GPIO_setConfig(IOID5, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
-//    GPIO_setCallback(IOID5, INTCallBackFxn);
+//    GPIO_setConfig(IOID5, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_RISING);
+//    GPIO_setCallback(IOID5, &INTCallBackFxn);
 //    GPIO_enableInt(IOID5);  /* INT */
+
+    INTPinHandle = PIN_open(&INTPinState, INTPinTable);
+    if(!INTPinHandle) {
+        /* Error initializing button pins */
+        while(1);
+    }
+
+       /* Setup callback for INT pins */
+    if (PIN_registerIntCb(INTPinHandle, &INTCallBackFxn) != 0) {
+        while(1);
+    }
+
 
     init_SPI_IMU();
 
@@ -681,16 +712,22 @@ void *masterThread(void *arg0)
     //  enable battery monitor enable
      AONBatMonEnable();
 
+     /* Interrupt */
+     *pFlag = 0;
+
+ //    int INT_val = PIN_getInputValue(PIN_ID(5));
+
      /* Check IMU ID */
  //   uint8_t dummy_read_XL;
  //   int32_t rx_Data_XL = platform_read(masterSpi, LSM6DSOX_WHOAMI, &dummy_read_XL);
 
     while(1){
 
-        int check_status = Activity_Detection(masterSpi);
-        if(check_status == 1){
-
-    //    while(globalFlag == 1){
+     //   int check_status = Activity_Detection(masterSpi);
+     //   if(check_status == 1){
+     //   printf("pin value is %d\n", PIN_getInputValue(PIN_ID(5));
+        while(PIN_getInputValue(PIN_ID(5)) == 0){
+  //      while(*pFlag == 1){
             int check_G_aval = Data_update_check(masterSpi, G_BIT);
             if(check_G_aval){
                 uint8_t* XL_data = Acceleration_raw_get(masterSpi);
@@ -698,10 +735,11 @@ void *masterThread(void *arg0)
                 RF_transmission(XL_data, G_data);
             }
         }
-        else{
-            sleep(STANDBY_DURATION_SECOND);
-            Voltage_Temp_read();
-        }
+//        else{
+   //     globalFlag = 0;
+        sleep(STANDBY_DURATION_SECOND);
+        Voltage_Temp_read();
+     //   }
     }
 
 

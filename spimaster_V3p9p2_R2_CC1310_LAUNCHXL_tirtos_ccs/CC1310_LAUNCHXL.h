@@ -119,7 +119,7 @@ extern const PIN_Config BoardGpioInitTable[];
 #define CC1310_LAUNCHXL_PWMPIN7               PIN_UNASSIGNED
 
 /* SPI */
-#define CC1310_LAUNCHXL_SPI_FLASH_CS          IOID_3
+#define CC1310_LAUNCHXL_SPI_FLASH_CS          IOID_4
 #define CC1310_LAUNCHXL_FLASH_CS_ON           0
 #define CC1310_LAUNCHXL_FLASH_CS_OFF          1
 
