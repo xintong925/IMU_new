@@ -18,7 +18,7 @@ extern "C" {
 #define PAYLOAD_LENGTH 20
 
 /* Sleep */
-#define STANDBY_DURATION_SECOND 5
+#define STANDBY_DURATION_SECOND 3
 
 /* Bit to read */
 #define READ_BIT                         0x8000
@@ -28,6 +28,8 @@ extern "C" {
 #define ACTIVITY_BIT                     0x0010
 
 /* Configuration of XL, G and interrupt */
+#define CTRL1_XL_VALUE_26Hz_2g           0x0020 //ODR_XL = 26 Hz, FS_XL = ±2 g
+#define CTRL1_XL_VALUE_26Hz_4g           0x0028 //ODR_XL = 52 Hz, FS_XL = ±4 g
 #define CTRL1_XL_VALUE_52Hz_2g           0x0030 //ODR_XL = 52 Hz, FS_XL = ±2 g
 #define CTRL1_XL_VALUE_52Hz_4g           0x0038 //ODR_XL = 52 Hz, FS_XL = ±4 g
 #define CTRL1_XL_VALUE_104Hz_2g          0x0040 //ODR_XL = 104 Hz, FS_XL = ±2 g
@@ -40,9 +42,11 @@ extern "C" {
 #define CTRL2_G_VALUE_52Hz_1000          0x0038 //ODR_G = 52 Hz, FS_G = ±1000 dps
 #define CTRL2_G_VALUE_104Hz_500          0x0044 //ODR_G = 104 Hz, FS_G = ±500 dps
 #define CTRL2_G_VALUE_104Hz_1000         0x0048 //ODR_G = 104 Hz, FS_G = ±1000 dps
+#define CTRL2_G_VALUE_208Hz_500          0x0054 //ODR_G = 208 Hz, FS_G = ±500 dps
+#define CTRL2_G_VALUE_208Hz_1000         0x0058 //ODR_G = 208 Hz, FS_G = ±1000 dps
 #define WAKE_UP_DUR                      0x0062 //last 4 bits: duration for inactivity detection - LSB*512/ODR_XL
 #define WAKE_UP_THS                      0x0002 // Threshold for wakeup (last 5 bits)
-#define TAP_CFG0_VALUE                   0x0020 // Select sleep-change notification; 0x0020 reporting
+#define TAP_CFG0_VALUE                   0x0000 // Select sleep-change notification; 0x0020 reporting
 #define TAP_CFG2_VALUE                   0x00E0 // Enable interrupt; set XL ODR to 12.5 Hz in LP, gyro to power down
 #define MD1_CFG_VALUE                    0x0080 // Routing activity/inactivity event on INT1 enabled
 #define MD2_CFG_VALUE                    0x0080

@@ -66,6 +66,9 @@
 #include "LSM6DSOX.h"
 #include "parameter_setting.h"
 
+#include <ti/sysbios/BIOS.h>
+#include <ti/sysbios/knl/Semaphore.h>
+
 /* Example/Board Header files */
 
 #include DeviceFamily_constructPath(driverlib/rf_prop_mailbox.h)
@@ -103,6 +106,7 @@ int32_t platform_write(void *handle, uint16_t reg, uint16_t data);
 int Activity_Detection(void *handle);
 int Data_update_check(void *handle, uint16_t check_type);
 int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read);
+int RF_transmission_second(uint8_t* XL_data_read, uint8_t* G_data_read);
 int Voltage_Temp_read(void);
 
 uint8_t* Acceleration_raw_get(void *handle);
@@ -146,13 +150,14 @@ SPI_Transaction transaction;
 
 uint8_t data_ready = 0;
 
-PIN_Config INTPinTable[] = {
-    IOID5 | PIN_INPUT_EN | PIN_PULLDOWN | PIN_IRQ_POSEDGE,
-    PIN_TERMINATE
-};
+//PIN_Config INTPinTable[] = {
+//    IOID5 | PIN_INPUT_EN | PIN_PULLDOWN | PIN_IRQ_NEGEDGE,
+//    PIN_TERMINATE
+//};
 
 /* Semaphore to block master until slave is ready for transfer */
 sem_t masterSem;
+sem_t intSem;
 
 /*
  *  ======== slaveReadyFxn ========
@@ -169,6 +174,9 @@ void slaveReadyFxn(uint_least8_t index)
 
 void INTCallBackFxn(PIN_Handle handle, PIN_Id pinId)
 {
+ //   CPUdelay(8000*50);
+ //   sem_post(&intSem);
+
     *pFlag = (*pFlag == 0) ? 1 : 0;
 //    if(globalFlag == 1){
 //        globalFlag = 0;
@@ -176,7 +184,7 @@ void INTCallBackFxn(PIN_Handle handle, PIN_Id pinId)
 //    else{
 //        globalFlag = 1;
 //    }
-    printf("pin value is %d\n", PIN_getInputValue(PIN_ID(5)));
+    printf("pin value is %d\n", *pFlag);
 //    while(globalFlag == 1){
 //        int check_G_aval = Data_update_check(masterSpi, G_BIT);
 //        if(check_G_aval){
@@ -365,7 +373,7 @@ int init_SPI_IMU(void) {
 
     SPI_Params_init(&spiParams);            //spiParams is a global (TODO change eventually)
     spiParams.frameFormat = SPI_POL0_PHA0; // Mode 1
-    spiParams.bitRate = 4000000;
+    spiParams.bitRate = 1000000;
   //  spiParams.mode = SPI_MASTER;
     spiParams.dataSize = 16;
     spiParams.transferMode = SPI_MODE_BLOCKING;
@@ -391,8 +399,8 @@ int init_SPI_IMU(void) {
 
 int IMU_Configure(void) {
 
-    int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, 0x0048);      // Turn on the accelerometer by setting ODR_XL and FS_XL
-    int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, 0x0038);         // Turn on the gyroscope by setting ODR_G and FS_G
+    int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_104Hz_4g);      // Turn on the accelerometer by setting ODR_XL and FS_XL
+    int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_104Hz_1000);         // Turn on the gyroscope by setting ODR_G and FS_G
     int32_t WakeUpDur = platform_write(masterSpi, LSM6DSOX_WAKE_UP_DUR,  WAKE_UP_DUR);       // Set duration for inactivity detection
                                                                                                 // Select activity/inactivity threshold resolution and duration
     int32_t WakeUpTHS = platform_write(masterSpi, LSM6DSOX_WAKE_UP_THS, WAKE_UP_THS);        // Set activity/inactivity threshold
@@ -579,6 +587,24 @@ int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read){
     return 1;
 }
 
+int RF_transmission_second(uint8_t* XL_data_read, uint8_t* G_data_read){
+
+    uint8_t mdata_buffer[13] = {0x00}; //the buffer where the data is saved to
+
+    int i;
+
+    for (i = 1; i < 7; i++){
+
+        mdata_buffer[i] = XL_data_read[i-1];
+        mdata_buffer[i + 6] = G_data_read[i-1];
+
+    }
+
+    send_databuffer(mdata_buffer,sizeof(mdata_buffer));
+
+    return 1;
+}
+
 
 /**
   * @brief  Check if there is activity detected in IMU
@@ -629,7 +655,7 @@ int Voltage_Temp_read(void){
     BATstatus = (BATstatus * 125) >> 5;
 
     //convert in floating point value
-    float BATvoltage = (float)BATstatus / 1000;
+ //   float BATvoltage = (float)BATstatus / 1000;
 
   //  float TEMPdegc = (float)TEMPstatus;
 
@@ -645,7 +671,7 @@ int Voltage_Temp_read(void){
       ((uint32_t)TEMPstatus >> 0) & 0xff,
     };
 
-    float TEMPdegc = (float)TEMPstatus;
+//    float TEMPdegc = (float)TEMPstatus;
 
     uint8_t mdata_buffer[4];
 
@@ -656,8 +682,8 @@ int Voltage_Temp_read(void){
         mdata_buffer[i + 2] = Temp_bytes[i];
     }
 
-    printf("Voltage is %f\n", BATvoltage);
-    printf("Temp is %f\n", TEMPdegc);
+//    printf("Voltage is %f\n", BATvoltage);
+//    printf("Temp is %f\n", TEMPdegc);
 
 
     send_databuffer(mdata_buffer,sizeof(mdata_buffer));
@@ -673,6 +699,7 @@ int Voltage_Temp_read(void){
  */
 void *masterThread(void *arg0)
 {
+    int32_t         status;
 
     /* INIT */
     RF_Params rfParams;
@@ -687,31 +714,41 @@ void *masterThread(void *arg0)
     uint8_t test_startup_buffer[1] = {0x28};
     send_databuffer(test_startup_buffer,sizeof(test_startup_buffer));     //confirm Tx OK
 
-    Power_enablePolicy();
+ //   Power_enablePolicy();
+    //  enable battery monitor
+//    AONBatMonEnable();
 
-//    GPIO_setConfig(IOID5, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_RISING);
+//    GPIO_setConfig(IOID5, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
 //    GPIO_setCallback(IOID5, &INTCallBackFxn);
 //    GPIO_enableInt(IOID5);  /* INT */
 
-    INTPinHandle = PIN_open(&INTPinState, INTPinTable);
-    if(!INTPinHandle) {
-        /* Error initializing button pins */
-        while(1);
-    }
 
-       /* Setup callback for INT pins */
-    if (PIN_registerIntCb(INTPinHandle, &INTCallBackFxn) != 0) {
-        while(1);
-    }
+
+//    status = sem_init(&intSem, 0, 0);
+//    if (status != 0) {
+//        printf("Error creating intSem\n");
+//
+//        while(1);
+//    }
 
 
     init_SPI_IMU();
 
-    IMU_Configure();
+    int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_104Hz_4g);      // Turn on the accelerometer by setting ODR_XL and FS_XL
+    int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_104Hz_1000);         // Turn on the gyroscope by setting ODR_G and FS_G
 
-    //  enable battery monitor enable
-     AONBatMonEnable();
+//    IMU_Configure();
 
+//    INTPinHandle = PIN_open(&INTPinState, INTPinTable);
+//    if(!INTPinHandle) {
+//            /* Error initializing button pins */
+//        while(1);
+//    }
+//
+//           /* Setup callback for INT pins */
+//    if (PIN_registerIntCb(INTPinHandle, &INTCallBackFxn) != 0) {
+//        while(1);
+//    }
      /* Interrupt */
      *pFlag = 0;
 
@@ -721,26 +758,56 @@ void *masterThread(void *arg0)
  //   uint8_t dummy_read_XL;
  //   int32_t rx_Data_XL = platform_read(masterSpi, LSM6DSOX_WHOAMI, &dummy_read_XL);
 
-    while(1){
+     sleep(3);
+ //    int cycle_count = 0;
+     int send_flag = 0;
+     int num_send;
+
+     while(1){
+     //    printf("flag is %d", send_flag);
+
 
      //   int check_status = Activity_Detection(masterSpi);
      //   if(check_status == 1){
      //   printf("pin value is %d\n", PIN_getInputValue(PIN_ID(5));
-        while(PIN_getInputValue(PIN_ID(5)) == 0){
-  //      while(*pFlag == 1){
-            int check_G_aval = Data_update_check(masterSpi, G_BIT);
-            if(check_G_aval){
-                uint8_t* XL_data = Acceleration_raw_get(masterSpi);
-                uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
-                RF_transmission(XL_data, G_data);
-            }
-        }
-//        else{
+    //    while(PIN_getInputValue(PIN_ID(5)) == 0){
+
+////        sem_wait(&intSem);
+///        while(*pFlag == 0){
+   //      for (cycle_count = 0; cycle_count <=10; cycle_count++){
+   //      int check_G_aval = Data_update_check(masterSpi, G_BIT);
+   //      if(check_G_aval){
+     //    send_flag = (send_flag == 0) ? 1 : 0;
+     //    printf("flag is %d", send_flag);
+         num_send = 1040;
+
+         while(send_flag == 0){
+             while(num_send >= 0){
+                 int check_G_aval = Data_update_check(masterSpi, G_BIT);
+                 if(check_G_aval){
+                     uint8_t* XL_data = Acceleration_raw_get(masterSpi);
+                     uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
+                     RF_transmission(XL_data, G_data);
+                     num_send = num_send - 1;
+                 }
+             //    num_send = num_send - 1;
+              }
+             send_flag = 1;
+         }
+
+         while(send_flag == 1){
+             sleep(10);
+             printf("sleep");
+             send_flag = 0;
+         }
+     }
+    // }
+   //     else{
    //     globalFlag = 0;
-        sleep(STANDBY_DURATION_SECOND);
-        Voltage_Temp_read();
-     //   }
-    }
+    //    sleep(STANDBY_DURATION_SECOND);
+    //    Voltage_Temp_read();
+  //      }
+
 
 
 }
