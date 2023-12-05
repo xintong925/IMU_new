@@ -714,7 +714,7 @@ void *masterThread(void *arg0)
     uint8_t test_startup_buffer[1] = {0x28};
     send_databuffer(test_startup_buffer,sizeof(test_startup_buffer));     //confirm Tx OK
 
- //   Power_enablePolicy();
+//    Power_enablePolicy();
     //  enable battery monitor
 //    AONBatMonEnable();
 
@@ -734,8 +734,8 @@ void *masterThread(void *arg0)
 
     init_SPI_IMU();
 
-    int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_104Hz_4g);      // Turn on the accelerometer by setting ODR_XL and FS_XL
-    int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_104Hz_1000);         // Turn on the gyroscope by setting ODR_G and FS_G
+    int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_PowerDown);      // Turn on the accelerometer by setting ODR_XL and FS_XL
+    int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_PowerDown);         // Turn on the gyroscope by setting ODR_G and FS_G
 
 //    IMU_Configure();
 
@@ -749,64 +749,76 @@ void *masterThread(void *arg0)
 //    if (PIN_registerIntCb(INTPinHandle, &INTCallBackFxn) != 0) {
 //        while(1);
 //    }
-     /* Interrupt */
-     *pFlag = 0;
+//     /* Interrupt */
+//     *pFlag = 0;
 
- //    int INT_val = PIN_getInputValue(PIN_ID(5));
 
      /* Check IMU ID */
  //   uint8_t dummy_read_XL;
  //   int32_t rx_Data_XL = platform_read(masterSpi, LSM6DSOX_WHOAMI, &dummy_read_XL);
 
-     sleep(3);
- //    int cycle_count = 0;
-     int send_flag = 0;
-     int num_send;
+     int num_check_VT;
 
-     while(1){
-     //    printf("flag is %d", send_flag);
+//     for (num_check_VT = 0; num_check_VT < 11520; num_check_VT++){
+//         Voltage_Temp_read();
+//         sleep(5);
+//     }
 
 
-     //   int check_status = Activity_Detection(masterSpi);
-     //   if(check_status == 1){
-     //   printf("pin value is %d\n", PIN_getInputValue(PIN_ID(5));
-    //    while(PIN_getInputValue(PIN_ID(5)) == 0){
+    int send_flag = 0;
+    int num_send;
+    int rf_count;
 
-////        sem_wait(&intSem);
-///        while(*pFlag == 0){
-   //      for (cycle_count = 0; cycle_count <=10; cycle_count++){
-   //      int check_G_aval = Data_update_check(masterSpi, G_BIT);
-   //      if(check_G_aval){
-     //    send_flag = (send_flag == 0) ? 1 : 0;
-     //    printf("flag is %d", send_flag);
-         num_send = 1040;
+    while(1){
+            //    printf("flag is %d", send_flag);
 
-         while(send_flag == 0){
-             while(num_send >= 0){
-                 int check_G_aval = Data_update_check(masterSpi, G_BIT);
-                 if(check_G_aval){
-                     uint8_t* XL_data = Acceleration_raw_get(masterSpi);
-                     uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
-                     RF_transmission(XL_data, G_data);
-                     num_send = num_send - 1;
-                 }
-             //    num_send = num_send - 1;
-              }
-             send_flag = 1;
-         }
 
-         while(send_flag == 1){
-             sleep(10);
-             printf("sleep");
-             send_flag = 0;
-         }
-     }
-    // }
-   //     else{
-   //     globalFlag = 0;
-    //    sleep(STANDBY_DURATION_SECOND);
-    //    Voltage_Temp_read();
-  //      }
+            //   int check_status = Activity_Detection(masterSpi);
+            //   if(check_status == 1){
+            //   printf("pin value is %d\n", PIN_getInputValue(PIN_ID(5));
+           //    while(PIN_getInputValue(PIN_ID(5)) == 0){
+
+       ////        sem_wait(&intSem);
+       ///        while(*pFlag == 0){
+          //      for (cycle_count = 0; cycle_count <=10; cycle_count++){
+          //      int check_G_aval = Data_update_check(masterSpi, G_BIT);
+          //      if(check_G_aval){
+            //    send_flag = (send_flag == 0) ? 1 : 0;
+            //    printf("flag is %d", send_flag);
+            //    rf_count = 12;
+             //   num_send = 62400; // freq = 12.5Hz, 10-min duty cycle
+                num_send = 7500; //freq = 12.5Hz, 10-min duty cycle
+            //    num_send = 3120; // power test
+            //    num_send = 187200; //walk experiment
+
+                int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_125Hz_4g);      // Turn on the accelerometer by setting ODR_XL and FS_XL
+                int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_125Hz_1000);         // Turn on the gyroscope by setting ODR_G and FS_G
+
+                while(send_flag == 0){
+                    while(num_send >= 0){
+                        int check_G_aval = Data_update_check(masterSpi, G_BIT);
+                        if(check_G_aval){
+                            uint8_t* XL_data = Acceleration_raw_get(masterSpi);
+                            uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
+                            RF_transmission(XL_data, G_data);
+                            num_send = num_send - 1;
+                        }
+                     }
+                    send_flag = 1;
+                }
+
+                while(send_flag == 1){
+                    int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_PowerDown);      // Turn on the accelerometer by setting ODR_XL and FS_XL
+                    int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_PowerDown);         // Turn on the gyroscope by setting ODR_G and FS_G
+
+                    for (num_check_VT = 0; num_check_VT < 120; num_check_VT++){   // experiment: 120
+                        Voltage_Temp_read();
+                        sleep(5);
+                    }
+
+                    send_flag = 0;
+                }
+            }
 
 
 
