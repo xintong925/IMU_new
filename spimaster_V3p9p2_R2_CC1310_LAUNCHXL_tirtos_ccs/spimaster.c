@@ -767,7 +767,8 @@ void *masterThread(void *arg0)
 
     int send_flag = 0;
     int num_send;
-    int rf_count;
+    int rf_send;
+
 
     while(1){
             //    printf("flag is %d", send_flag);
@@ -785,9 +786,8 @@ void *masterThread(void *arg0)
           //      if(check_G_aval){
             //    send_flag = (send_flag == 0) ? 1 : 0;
             //    printf("flag is %d", send_flag);
-            //    rf_count = 12;
-             //   num_send = 62400; // freq = 12.5Hz, 10-min duty cycle
-                num_send = 7500; //freq = 12.5Hz, 10-min duty cycle
+                num_send = 62400; // freq = 12.5Hz, 10-min duty cycle
+             //   num_send = 250; //freq = 12.5Hz, 20s duty cycle
             //    num_send = 3120; // power test
             //    num_send = 187200; //walk experiment
 
@@ -800,8 +800,16 @@ void *masterThread(void *arg0)
                         if(check_G_aval){
                             uint8_t* XL_data = Acceleration_raw_get(masterSpi);
                             uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
-                            RF_transmission(XL_data, G_data);
                             num_send = num_send - 1;
+                            if(num_send % 13 == 0){
+                                printf("num_send is %d\n", num_send);
+                            //    uint8_t* XL_data = Acceleration_raw_get(masterSpi);
+                            //    uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
+                                RF_transmission(XL_data, G_data);
+                            //num_send = num_send - 1;
+
+                            }
+                       //     num_send = num_send - 1;
                         }
                      }
                     send_flag = 1;
