@@ -1,7 +1,7 @@
 /*!
- *  @file Adafruit_LSM6DS.h
+ *  @file LSM6DSOX.h
  *
- *  I2C Driver base for Adafruit LSM6DSxx 6-DoF Accelerometer and Gyroscope
+ *  SPI Driver base for Adafruit LSM6DSOX 6-DoF Accelerometer and Gyroscope
  *      library
  *
  *  Adafruit invests time and resources providing this open source code,
@@ -24,10 +24,10 @@ extern "C" {
 #include <stddef.h>
 #include <math.h>
 
-#define LSM6DSOX_I2CADDR_DEFAULT           0x6A           ///< LSM6DOX default i3c address
-#define LSM6DSOX_CHIP_ID                   0x6C           ///< LSM6DSOX default device id from WHOAMI
-#define LSM6DSOX_FUNC_CFG_ACCESS           0x0100         ///< Enable embedded functions register
-#define LSM6DSOX_PIN_CTRL                  0x0200         ///< SDO, OCS_AUX, SDO_AUX pins pull-up enable/disable register
+#define LSM6DSOX_I2CADDR_DEFAULT           0x6A          ///< LSM6DOX default i3c address
+#define LSM6DSOX_CHIP_ID                   0x6C          ///< LSM6DSOX default device id from WHOAMI
+#define LSM6DSOX_FUNC_CFG_ACCESS           0x0100        ///< Enable embedded functions register
+#define LSM6DSOX_PIN_CTRL                  0x0200        ///< SDO, OCS_AUX, SDO_AUX pins pull-up enable/disable register
 #define LSM6DSOX_MLC_INT1                  0x0D00        ///< Interrupt control for INT 1 -  each bit enables a signal to be carried through INT1
 #define LSM6DSOX_INT1_CTRL                 0x0D00        ///< Enables Gyro & Accel data-ready interrupt on INT1 pin
 #define LSM6DSOX_INT2_CTRL                 0x0E00        ///< Gyroscope and Accelerometer data-ready

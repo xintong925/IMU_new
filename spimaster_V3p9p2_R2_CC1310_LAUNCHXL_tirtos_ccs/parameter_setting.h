@@ -2,7 +2,9 @@
  * parameter_setting.h
  *
  *  Created on: Sep 17, 2023
- *      Author: tongx
+ *      Author: Xintong Tong Abby
+ *
+ *  Configuration reference file for spimaster.c
  */
 
 #ifndef PARAMETER_SETTING_H_

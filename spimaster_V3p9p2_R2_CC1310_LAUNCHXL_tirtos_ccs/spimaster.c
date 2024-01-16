@@ -786,8 +786,8 @@ void *masterThread(void *arg0)
           //      if(check_G_aval){
             //    send_flag = (send_flag == 0) ? 1 : 0;
             //    printf("flag is %d", send_flag);
-              //  num_send = 62400; // freq = 12.5Hz, 10-min duty cycle
-                num_send = 250; //freq = 12.5Hz, 20s duty cycle
+                num_send = 62400; // freq = 12.5Hz, 10-min duty cycle
+              //  num_send = 250; //freq = 12.5Hz, 20s duty cycle
             //    num_send = 3120; // power test
             //    num_send = 187200; //walk experiment
 
