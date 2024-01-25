@@ -143,21 +143,21 @@ static PIN_State INTPinState;
 int16_t masterRxBuffer[SPI_MSG_LENGTH];
 int16_t masterTxBuffer[SPI_MSG_LENGTH];
 
-
 SPI_Handle      masterSpi;
 SPI_Params      spiParams;
 SPI_Transaction transaction;
 
 uint8_t data_ready = 0;
 
+// Interrupt - uncomment to enable interrupt
 //PIN_Config INTPinTable[] = {
 //    IOID5 | PIN_INPUT_EN | PIN_PULLDOWN | PIN_IRQ_NEGEDGE,
 //    PIN_TERMINATE
 //};
 
 /* Semaphore to block master until slave is ready for transfer */
-sem_t masterSem;
-sem_t intSem;
+//sem_t masterSem;
+//sem_t intSem;
 
 /*
  *  ======== slaveReadyFxn ========
@@ -172,19 +172,18 @@ void slaveReadyFxn(uint_least8_t index)
 
 }
 
+/* Callback function to enable interrupt */
 void INTCallBackFxn(PIN_Handle handle, PIN_Id pinId)
 {
- //   CPUdelay(8000*50);
- //   sem_post(&intSem);
 
-    *pFlag = (*pFlag == 0) ? 1 : 0;
+    *pFlag = (*pFlag == 0) ? 1 : 0; // Alternate between 0 and 1 whenever it is interrupted
 //    if(globalFlag == 1){
 //        globalFlag = 0;
 //    }
 //    else{
 //        globalFlag = 1;
 //    }
-    printf("pin value is %d\n", *pFlag);
+//    printf("pin value is %d\n", *pFlag);
 //    while(globalFlag == 1){
 //        int check_G_aval = Data_update_check(masterSpi, G_BIT);
 //        if(check_G_aval){
@@ -195,6 +194,7 @@ void INTCallBackFxn(PIN_Handle handle, PIN_Id pinId)
 //     }
 }
 
+/*  Function to send buffer */
 void send_databuffer(const void* buffer, int buffer_size)
 {
 
@@ -364,6 +364,7 @@ int32_t platform_write(void *handle, uint16_t reg, uint16_t data)
     return ret;
 }
 
+/* Initialize SPI communication of IMU by setting spiParams, opening SPI and send test data buffer */
 int init_SPI_IMU(void) {
 
 /* Initialize SPI parameters */
@@ -397,6 +398,7 @@ int init_SPI_IMU(void) {
 
 }
 
+/* IMU configuration - refer to the datasheet and parameter_setting.h */
 int IMU_Configure(void) {
 
     int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_104Hz_4g);      // Turn on the accelerometer by setting ODR_XL and FS_XL
@@ -408,7 +410,7 @@ int IMU_Configure(void) {
     int32_t Tap_Enable = platform_write(masterSpi, LSM6DSOX_TAP_CFG0, TAP_CFG0_VALUE);       // Select sleep-change notification
                                                                                                 // Select slope filter
     int32_t InterruptEnable = platform_write(masterSpi, LSM6DSOX_TAP_CFG2, TAP_CFG2_VALUE);  // Enable interrupt
-                                                                                                // Inactvity configuration: accelerometer to 12.5 Hz (LP mode)
+                                                                                                // Inactivity configuration: accelerometer to 12.5 Hz (LP mode)
                                                                                                 // Gyroscope to Power-Down mode
     int32_t INT1_Routing = platform_write(masterSpi, LSM6DSOX_MD1_CFG, MD1_CFG_VALUE);       // Activity/Inactivity interrupt driven to INT1 pin
  //   int32_t INT2_Routing = platform_write(masterSpi, LSM6DSOX_MD2_CFG, MD2_CFG_VALUE);
@@ -452,6 +454,7 @@ int Data_update_check(void *handle, uint16_t check_type){ //check_type: XL_BIT o
   * @param  len         Number of consecutive register to write
   *
   * @return Array of 6 8-bit hex number (x, y, z axis low and high value)
+  * Commented part is converting process from hex number to float number
   */
 //e.g. Acceleration_raw_get(masterSpi, LSM6DSOX_STATUS_REG, 1)
 uint8_t* Acceleration_raw_get(void *handle) {
@@ -482,7 +485,7 @@ uint8_t* Acceleration_raw_get(void *handle) {
         accel_8bit[4] = (uint8_t)data_ZH;
         accel_8bit[5] = (uint8_t)data_ZL;
 
-
+   //     convert to float number
    //     data_XH <<= 8;
    //     data_YH <<= 8;
    //     data_ZH <<= 8;
@@ -516,6 +519,7 @@ uint8_t* Acceleration_raw_get(void *handle) {
   * @param  len         Number of consecutive register to write - always set to 1
   *
   * @return Array of 6 8-bit hex number (x, y, z axis low and high value)
+  * Commented part is converting process from hex number to float number
   */
 //e.g. Angular_raw_get(masterSpi, LSM6DSOX_STATUS_REG, 1)
 uint8_t* Angular_Rate_raw_get(void *handle) {
@@ -546,7 +550,7 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
         angular_8bit[4] = (uint8_t)data_ZH;
         angular_8bit[5] = (uint8_t)data_ZL;
 
-        // can be removed
+  //      convert to float number (can be removed)
   //      data_XH <<= 8;
   //      data_YH <<= 8;
   //      data_ZH <<= 8;
@@ -565,10 +569,8 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
     return angular_8bit;
 }
 
-/**
-  * @brief  Send acceleration and angular velocity (6x 8-bit packets each) through RF transmission
-  */
 
+/* Send acceleration and angular velocity (6x 8-bit packets each) through RF transmission */
 int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read){
 
     uint8_t mdata_buffer[PACKET_SIZE] = {0x00}; //the buffer where the data is saved to
@@ -587,6 +589,7 @@ int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read){
     return 1;
 }
 
+/* Send an additional '00' before acceleration and angular velocity */
 int RF_transmission_second(uint8_t* XL_data_read, uint8_t* G_data_read){
 
     uint8_t mdata_buffer[13] = {0x00}; //the buffer where the data is saved to
@@ -641,10 +644,7 @@ int Activity_Detection(void *handle) {
 
 }
 
-/**
-  * @brief  Read voltage and temperature on MCU with TI functions and send directly through RF
-  */
-
+/* Read voltage and temperature on MCU with TI functions and send directly through RF */
 int Voltage_Temp_read(void){
     //Get battery voltage (this will return battery voltage in decimal form you need to convert)
     uint32_t BATstatus = AONBatMonBatteryVoltageGet();
@@ -732,7 +732,7 @@ void *masterThread(void *arg0)
 //    }
 
 
-    init_SPI_IMU();
+    init_SPI_IMU(); // Initialize IMU
 
     int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_PowerDown);      // Turn on the accelerometer by setting ODR_XL and FS_XL
     int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_PowerDown);         // Turn on the gyroscope by setting ODR_G and FS_G
@@ -753,7 +753,7 @@ void *masterThread(void *arg0)
 //     *pFlag = 0;
 
 
-     /* Check IMU ID */
+     /* Check IMU ID (check if SPI communication functions) */
  //   uint8_t dummy_read_XL;
  //   int32_t rx_Data_XL = platform_read(masterSpi, LSM6DSOX_WHOAMI, &dummy_read_XL);
 
@@ -779,18 +779,17 @@ void *masterThread(void *arg0)
             //   printf("pin value is %d\n", PIN_getInputValue(PIN_ID(5));
            //    while(PIN_getInputValue(PIN_ID(5)) == 0){
 
-       ////        sem_wait(&intSem);
        ///        while(*pFlag == 0){
           //      for (cycle_count = 0; cycle_count <=10; cycle_count++){
           //      int check_G_aval = Data_update_check(masterSpi, G_BIT);
           //      if(check_G_aval){
             //    send_flag = (send_flag == 0) ? 1 : 0;
             //    printf("flag is %d", send_flag);
-                num_send = 62400; // freq = 12.5Hz, 10-min duty cycle
-              //  num_send = 250; //freq = 12.5Hz, 20s duty cycle
+                num_send = 7500; // freq = 12.5Hz, 10-min duty cycle
+            //    num_send = 250; //freq = 12.5Hz, 20s duty cycle
             //    num_send = 3120; // power test
-            //    num_send = 187200; //walk experiment
 
+                /* Initialize IMU */
                 int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_125Hz_4g);      // Turn on the accelerometer by setting ODR_XL and FS_XL
                 int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_125Hz_1000);         // Turn on the gyroscope by setting ODR_G and FS_G
 
@@ -801,8 +800,8 @@ void *masterThread(void *arg0)
                             uint8_t* XL_data = Acceleration_raw_get(masterSpi);
                             uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
                             num_send = num_send - 1;
-                            if(num_send % 13 == 0){
-                                printf("num_send is %d\n", num_send);
+                            if(num_send % 13 == 0){           // send one message per second with freq = 12.5 Hz
+                             //   printf("num_send is %d\n", num_send);
                             //    uint8_t* XL_data = Acceleration_raw_get(masterSpi);
                             //    uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
                                 RF_transmission(XL_data, G_data);
@@ -819,7 +818,7 @@ void *masterThread(void *arg0)
                     int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_PowerDown);      // Turn on the accelerometer by setting ODR_XL and FS_XL
                     int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_PowerDown);         // Turn on the gyroscope by setting ODR_G and FS_G
 
-                    for (num_check_VT = 0; num_check_VT < 120; num_check_VT++){   // experiment: 120
+                    for (num_check_VT = 0; num_check_VT < 4; num_check_VT++){   // experiment: 120 (10 min)
                         Voltage_Temp_read();
                         sleep(5);
                     }
