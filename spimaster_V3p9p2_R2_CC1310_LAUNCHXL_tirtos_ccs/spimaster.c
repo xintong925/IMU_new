@@ -737,9 +737,9 @@ void *masterThread(void *arg0)
     int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_PowerDown);      // Turn on the accelerometer by setting ODR_XL and FS_XL
     int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_PowerDown);         // Turn on the gyroscope by setting ODR_G and FS_G
 
-//    IMU_Configure();
+//    IMU_Configure(); // Uncomment when enable interrupt
 
-//    INTPinHandle = PIN_open(&INTPinState, INTPinTable);
+//    INTPinHandle = PIN_open(&INTPinState, INTPinTable); // Uncomment when enable interrupt
 //    if(!INTPinHandle) {
 //            /* Error initializing button pins */
 //        while(1);
@@ -757,7 +757,7 @@ void *masterThread(void *arg0)
  //   uint8_t dummy_read_XL;
  //   int32_t rx_Data_XL = platform_read(masterSpi, LSM6DSOX_WHOAMI, &dummy_read_XL);
 
-     int num_check_VT;
+    int num_check_VT;
 
 //     for (num_check_VT = 0; num_check_VT < 11520; num_check_VT++){
 //         Voltage_Temp_read();
