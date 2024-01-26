@@ -767,8 +767,6 @@ void *masterThread(void *arg0)
 
     int send_flag = 0;
     int num_send;
-    int rf_send;
-
 
     while(1){
             //    printf("flag is %d", send_flag);
@@ -785,12 +783,12 @@ void *masterThread(void *arg0)
           //      if(check_G_aval){
             //    send_flag = (send_flag == 0) ? 1 : 0;
             //    printf("flag is %d", send_flag);
-                num_send = 7500; // freq = 12.5Hz, 10-min duty cycle
-            //    num_send = 250; //freq = 12.5Hz, 20s duty cycle
+           //     num_send = 7500; // freq = 12.5Hz, 10-min duty cycle
+                num_send = 250; //freq = 12.5Hz, 20s duty cycle
             //    num_send = 3120; // power test
 
                 /* Initialize IMU */
-                int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_125Hz_4g);      // Turn on the accelerometer by setting ODR_XL and FS_XL
+                int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_125Hz_4g);      // Turn on the accelerometer by setting ODR_XL and FS_XL, sampling rate: 12.5Hz
                 int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_125Hz_1000);         // Turn on the gyroscope by setting ODR_G and FS_G
 
                 while(send_flag == 0){
